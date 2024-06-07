@@ -8,9 +8,9 @@ import cv2
 from PIL import Image
 import requests
 import shutil
-from segment_anything import sam_model_registry, SamPredictor
+#from segment_anything import sam_model_registry, SamPredictor
 import re
-from segment_anything_hq import sam_model_registry, SamPredictor
+#from segment_anything_hq import sam_model_registry, SamPredictor
 import gc
 import random
 
@@ -178,169 +178,169 @@ def convert():
     print("Torchvision version:", torchvision.__version__)
     print("CUDA is available:", torch.cuda.is_available())
 
-    bbox_dataset = 'output2/predict'
-    seg_dataset = 'output2/predict/polygons'
-    image_files = glob.glob(f"{bbox_dataset}/**/*", recursive=True)
-    image_files = [f for f in image_files if f.lower().endswith(('.jpg', '.png'))]
+    # bbox_dataset = 'output2/predict'
+    # seg_dataset = 'output2/predict/polygons'
+    # image_files = glob.glob(f"{bbox_dataset}/**/*", recursive=True)
+    # image_files = [f for f in image_files if f.lower().endswith(('.jpg', '.png'))]
 
-    print("Number of images:", len(image_files))
+    # print("Number of images:", len(image_files))
 
-    # Iterate through each image file and add it to a tuple
-    image_labels = []
-    for imgPath in image_files:
-        # Get the label file path
-        labelPath = re.sub(r'\.[^.]*$', '.txt', imgPath)
+    # # Iterate through each image file and add it to a tuple
+    # image_labels = []
+    # for imgPath in image_files:
+    #     # Get the label file path
+    #     labelPath = re.sub(r'\.[^.]*$', '.txt', imgPath)
 
-        # Replace "images" with "labels"
-        labelPath = labelPath.replace("images", "labels")
+    #     # Replace "images" with "labels"
+    #     labelPath = labelPath.replace("images", "labels")
 
-        # Add the image and label path to a tuple
-        image_labels.append((imgPath, labelPath))
+    #     # Add the image and label path to a tuple
+    #     image_labels.append((imgPath, labelPath))
 
-    model_type = "vit_h"
-    sam_checkpoint = "sam_hq_vit_h.pth"
-    device = "cuda:0"  # Change this to the desired GPU
+    # model_type = "vit_h"
+    # sam_checkpoint = "sam_hq_vit_h.pth"
+    # device = "cuda:0"  # Change this to the desired GPU
 
-    samgpu = sam_model_registry[model_type](checkpoint=sam_checkpoint)
-    samgpu.to(device=device)
-    predictorgpu = SamPredictor(samgpu)
+    # samgpu = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+    # samgpu.to(device=device)
+    # predictorgpu = SamPredictor(samgpu)
 
-    for imgPath, labelPath in image_labels:
-        destination = f'{seg_dataset}'
-        # If the label file is in the destination folder, then skip
-        label_file = os.path.splitext(os.path.basename(imgPath))[0]
-        seg_label_path = os.path.join(destination, 'labels', f'{label_file}.txt')
+    # for imgPath, labelPath in image_labels:
+    #     destination = f'{seg_dataset}'
+    #     # If the label file is in the destination folder, then skip
+    #     label_file = os.path.splitext(os.path.basename(imgPath))[0]
+    #     seg_label_path = os.path.join(destination, 'labels', f'{label_file}.txt')
 
-        if os.path.exists(seg_label_path):
-            print(f'{label_file} already exists in {destination}')
-            continue
+    #     if os.path.exists(seg_label_path):
+    #         print(f'{label_file} already exists in {destination}')
+    #         continue
 
-        try:
-            labels = getLabels(labelPath)
-            print("Image name:")
-            print(imgPath)
+    #     try:
+    #         labels = getLabels(labelPath)
+    #         print("Image name:")
+    #         print(imgPath)
 
-            if labels == []:
-                pass
-            else:
-                raw_image = Image.open(imgPath).convert("RGB")
+    #         if labels == []:
+    #             pass
+    #         else:
+    #             raw_image = Image.open(imgPath).convert("RGB")
 
-                image = cv2.imread(imgPath, cv2.IMREAD_COLOR)
-                image = enhance_image_to_HDR(image)
-                image = cv2.GaussianBlur(image, (15, 15), 0)
-                image = adjust_gamma(image, 1.4)
-                image = cv2.resize(image, None, fx=0.5, fy=0.5)
-                image = cv2.add(image, np.array([30.0]))
+    #             image = cv2.imread(imgPath, cv2.IMREAD_COLOR)
+    #             image = enhance_image_to_HDR(image)
+    #             image = cv2.GaussianBlur(image, (15, 15), 0)
+    #             image = adjust_gamma(image, 1.4)
+    #             image = cv2.resize(image, None, fx=0.5, fy=0.5)
+    #             image = cv2.add(image, np.array([30.0]))
 
-                        # The rest of your code remains unchanged
-                try:
-                    predictorgpu.set_image(image)
-                    h, w = image.shape[:2]
-                    class_ids, bounding_boxes = getConvertedBoxes(labels, w, h, grow_factor=1)
-                    #show_boxes_on_image(raw_image, bounding_boxes)
-                    input_boxes = torch.tensor(bounding_boxes, device=predictorgpu.device)
-                    transformed_boxes = predictorgpu.transform.apply_boxes_torch(input_boxes, image.shape[:2])
-                    masks, _, low_rez_first_iteration_logits = predictorgpu.predict_torch(
-                        point_coords=None,
-                        point_labels=None,
-                        boxes=transformed_boxes,
-                        multimask_output=False,
-                    )
-                    print("Ran inference on GPU")
-                except Exception as e:
-                    print("Failed inference on GPU with: ")
-                    print(e)
-                    continue
+    #                     # The rest of your code remains unchanged
+    #             try:
+    #                 predictorgpu.set_image(image)
+    #                 h, w = image.shape[:2]
+    #                 class_ids, bounding_boxes = getConvertedBoxes(labels, w, h, grow_factor=1)
+    #                 #show_boxes_on_image(raw_image, bounding_boxes)
+    #                 input_boxes = torch.tensor(bounding_boxes, device=predictorgpu.device)
+    #                 transformed_boxes = predictorgpu.transform.apply_boxes_torch(input_boxes, image.shape[:2])
+    #                 masks, _, low_rez_first_iteration_logits = predictorgpu.predict_torch(
+    #                     point_coords=None,
+    #                     point_labels=None,
+    #                     boxes=transformed_boxes,
+    #                     multimask_output=False,
+    #                 )
+    #                 print("Ran inference on GPU")
+    #             except Exception as e:
+    #                 print("Failed inference on GPU with: ")
+    #                 print(e)
+    #                 continue
 
-                torch.cuda.empty_cache()
-                gc.collect()
+    #             torch.cuda.empty_cache()
+    #             gc.collect()
 
-                # IMPORTANT: we are first creating a rough mask with the HQ model within the size of the bbox
-                # then using that mask as a low rez input to a second iteration of the same model with a growth
-                # factor set up on the bounding box. The reason for this is to "grab" things that are slightly
-                # on the edge of the original bounding box. We are using a "single mask" return because
-                # multi-mask seems to look for too much detail on the model, and doesn't perform as well
-                # in testing... tbd whether this can be improved in the future!
+    #             # IMPORTANT: we are first creating a rough mask with the HQ model within the size of the bbox
+    #             # then using that mask as a low rez input to a second iteration of the same model with a growth
+    #             # factor set up on the bounding box. The reason for this is to "grab" things that are slightly
+    #             # on the edge of the original bounding box. We are using a "single mask" return because
+    #             # multi-mask seems to look for too much detail on the model, and doesn't perform as well
+    #             # in testing... tbd whether this can be improved in the future!
 
-                image = cv2.imread(imgPath, cv2.IMREAD_COLOR)
-                image = enhance_image_to_HDR(image)
-                image = cv2.GaussianBlur(image, (5, 5), 0)
-                image = adjust_gamma(image, 1.4)
+    #             image = cv2.imread(imgPath, cv2.IMREAD_COLOR)
+    #             image = enhance_image_to_HDR(image)
+    #             image = cv2.GaussianBlur(image, (5, 5), 0)
+    #             image = adjust_gamma(image, 1.4)
 
-                try:
-                    predictorgpu.set_image(image)
-                    h, w = image.shape[:2]
-                    class_ids, bounding_boxes = getConvertedBoxes(labels, w, h, grow_factor=1)
-                    #show_boxes_on_image(raw_image, bounding_boxes)
-                    input_boxes = torch.tensor(bounding_boxes, device=predictorgpu.device)
-                    transformed_boxes = predictorgpu.transform.apply_boxes_torch(input_boxes, image.shape[:2])
-                    masks, _, _ = predictorgpu.predict_torch(
-                        point_coords=None,
-                        point_labels=None,
-                        boxes=transformed_boxes,
-                        multimask_output=False,
-                        mask_input=low_rez_first_iteration_logits,
-                    )
+    #             try:
+    #                 predictorgpu.set_image(image)
+    #                 h, w = image.shape[:2]
+    #                 class_ids, bounding_boxes = getConvertedBoxes(labels, w, h, grow_factor=1)
+    #                 #show_boxes_on_image(raw_image, bounding_boxes)
+    #                 input_boxes = torch.tensor(bounding_boxes, device=predictorgpu.device)
+    #                 transformed_boxes = predictorgpu.transform.apply_boxes_torch(input_boxes, image.shape[:2])
+    #                 masks, _, _ = predictorgpu.predict_torch(
+    #                     point_coords=None,
+    #                     point_labels=None,
+    #                     boxes=transformed_boxes,
+    #                     multimask_output=False,
+    #                     mask_input=low_rez_first_iteration_logits,
+    #                 )
 
-                    print("Ran inference on GPU for the second iteration")
-                except Exception as e:
-                    print("Failed inference on GPU with: ")
-                    print(e)
-                    continue
+    #                 print("Ran inference on GPU for the second iteration")
+    #             except Exception as e:
+    #                 print("Failed inference on GPU with: ")
+    #                 print(e)
+    #                 continue
 
-                torch.cuda.empty_cache()
-                gc.collect()
+    #             torch.cuda.empty_cache()
+    #             gc.collect()
 
-                print("Made masks and there are X:")
-                print(str(len(masks)))
-                for i, mask in enumerate(masks):
-                    print("Working on mask No: " + str(i))
-                    binary_mask = masks[i].squeeze().cpu().numpy().astype(np.uint8)
-                    contours, hierarchy = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-                    try:
-                        # Sorting the contours by area and selecting the top 3
-                        largest_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:1]
+    #             print("Made masks and there are X:")
+    #             print(str(len(masks)))
+    #             for i, mask in enumerate(masks):
+    #                 print("Working on mask No: " + str(i))
+    #                 binary_mask = masks[i].squeeze().cpu().numpy().astype(np.uint8)
+    #                 contours, hierarchy = cv2.findContours(binary_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    #                 try:
+    #                     # Sorting the contours by area and selecting the top 3
+    #                     largest_contours = sorted(contours, key=cv2.contourArea, reverse=True)[:1]
 
-                        # Merging the top 3 contours together
-                        merged_contour = np.vstack(largest_contours)
-                        segmentation = merged_contour.flatten().tolist()
-                        mask = segmentation
+    #                     # Merging the top 3 contours together
+    #                     merged_contour = np.vstack(largest_contours)
+    #                     segmentation = merged_contour.flatten().tolist()
+    #                     mask = segmentation
 
-                        # Convert mask to numpy array of shape (N,2)
-                        mask = np.array(mask).reshape(-1, 2)
+    #                     # Convert mask to numpy array of shape (N,2)
+    #                     mask = np.array(mask).reshape(-1, 2)
 
-                        # Normalize the pixel coordinates
-                        mask_norm = mask / np.array([w, h])
-                        class_id = class_ids[i]
-                        yolo = mask_norm.reshape(-1)
+    #                     # Normalize the pixel coordinates
+    #                     mask_norm = mask / np.array([w, h])
+    #                     class_id = class_ids[i]
+    #                     yolo = mask_norm.reshape(-1)
 
-                        # If folder does not exist, create it
-                        if not os.path.exists(destination):
-                            os.makedirs(destination)
+    #                     # If folder does not exist, create it
+    #                     if not os.path.exists(destination):
+    #                         os.makedirs(destination)
 
-                    except Exception as e:
-                        print(str(e))
-                        continue
+    #                 except Exception as e:
+    #                     print(str(e))
+    #                     continue
 
-                    print(f'Writing segmentation file in {label_file} to {destination}')
-                    # Create labels folder if it does not exist
-                    if not os.path.exists(os.path.join(destination, 'labels')):
-                        os.makedirs(os.path.join(destination, 'labels'))
-                    with open(seg_label_path, "a") as f:
-                        for val in yolo:
-                            print("{} {:.6f}".format(class_id, val))
-                            f.write("{} {:.6f}".format(class_id, val))
-                        f.write("\n")
+    #                 print(f'Writing segmentation file in {label_file} to {destination}')
+    #                 # Create labels folder if it does not exist
+    #                 if not os.path.exists(os.path.join(destination, 'labels')):
+    #                     os.makedirs(os.path.join(destination, 'labels'))
+    #                 with open(seg_label_path, "a") as f:
+    #                     for val in yolo:
+    #                         print("{} {:.6f}".format(class_id, val))
+    #                         f.write("{} {:.6f}".format(class_id, val))
+    #                     f.write("\n")
 
-                torch.cuda.empty_cache()
-                gc.collect()
+    #             torch.cuda.empty_cache()
+    #             gc.collect()
 
-                # Create images folder if it does not exist
-                if not os.path.exists(os.path.join(destination, 'images')):
-                    os.makedirs(os.path.join(destination, 'images'))
-                # Copy image to destination/images
-                shutil.copy(imgPath, f'{destination}/images/{os.path.basename(os.path.splitext(imgPath)[0]) + os.path.splitext(imgPath)[1]}')
+    #             # Create images folder if it does not exist
+    #             if not os.path.exists(os.path.join(destination, 'images')):
+    #                 os.makedirs(os.path.join(destination, 'images'))
+    #             # Copy image to destination/images
+    #             shutil.copy(imgPath, f'{destination}/images/{os.path.basename(os.path.splitext(imgPath)[0]) + os.path.splitext(imgPath)[1]}')
 
-        except Exception as e:
-            print(e)
-            pass
+    #     except Exception as e:
+    #         print(e)
+    #         pass
