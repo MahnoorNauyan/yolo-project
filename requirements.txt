@@ -9,3 +9,4 @@ SQLAlchemy==2.0.28
 mplcursors==0.5.3
 segment-anything-hq==0.3
 timm==0.9.16
+ultralytics==8.1.29
